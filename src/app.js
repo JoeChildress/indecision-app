@@ -2,17 +2,48 @@ class IndecisionApp extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      options : [],
+      options : this.props.options,
     }
     this.handleDeleteOptions = this.handleDeleteOptions.bind(this);
+    this.handleDeleteOption = this.handleDeleteOption.bind(this);
     this.handlePick = this.handlePick.bind(this);
-    this.handleAddOption = this.handleAddOption.bind(this)
+    this.handleAddOption = this.handleAddOption.bind(this);
+
+  }
+
+  componentDidMount() {
+    //Good for fetching data needed at start
+    try{
+      const options = JSON.parse(localStorage.getItem("options"));
+      this.setState(() => {return ({options})});
+    }catch(e) {
+      //do nothing
+    }
+  }
+
+  componentDidUpdate(prevProp, prevState) {
+    //Good for updating the DB
+    //Save to storage only if difference in previous state.options and current state.options
+    if (prevState.options.length !== this.state.options) {
+      const json = JSON.stringify(this.state.options);
+      console.log(json);
+      localStorage.setItem("options", json);
+    }
   }
 
   handleDeleteOptions() {
-    this.setState(() => {
-      return {options:[]};
-    });
+    this.setState(() => ({options:[]}));
+  }
+
+  handleDeleteOption(optionToRemove) {
+    console.log('deleting single option',optionToRemove);
+    this.setState((prevState) => {
+      return {
+        options : prevState.options.filter((option) => {
+          return option !== optionToRemove;
+        })
+      }
+    })
   }
 
   handleAddOption(option) {
@@ -22,20 +53,15 @@ class IndecisionApp extends React.Component {
       return "You've alread entered this option"
     }
 
-    this.setState((prevState) => {
-      return {
-        options : prevState.options.concat(option),
-      }
-    })
+    this.setState((prevState) => ({options : prevState.options.concat(option)}));
   }
 
   handlePick() {
-    console.log(this.state.options[Math.floor(Math.random()*this.state.options.length)]);
+    alert(this.state.options[Math.floor(Math.random()*this.state.options.length)]);
   }
   render() {
     const title = "Indecision";
     const subTitle = "Put your life in the hands of a computer!"; 
-
 
     return (
       <div>
@@ -47,65 +73,63 @@ class IndecisionApp extends React.Component {
         <Options 
           options={this.state.options}
           handleDeleteOptions = {this.handleDeleteOptions}
+          handleDeleteOption = {this.handleDeleteOption}
         />
         <AddOption 
           options={this.state.options}
           handleAddOption = {this.handleAddOption}
         />
         {this.state.error && <p>{this.state.error}</p>}
-        <Widget />
+
       </div>
     )
   }
 }
 
-class Header extends React.Component {
-  render() {
-    return (
-      <div>
-        <h1>{this.props.title}</h1>
-        <h2>{this.props.subtitle}</h2>
-      </div>
-    )
-  }
+IndecisionApp.defaultProps = {
+    options: []
 }
 
-class Action extends React.Component {
-
-  render() {
-    return (
-      <div>
-        <button
-        onClick={this.props.handlePick}
-        disabled = {!this.props.hasOptions}
-        >What should I do?</button>
-      </div>
-    )
-  }
+const Header = (props) => {
+  return (
+    <div>
+      <h1>{props.title}</h1>
+      <h2>{props.subtitle}</h2>
+    </div>
+  )
 }
 
-class Options extends React.Component {
-  render() {
-    return (
-      <div>
-      <button onClick={this.props.handleDeleteOptions}>Remove All</button>
-      {this.props.options.map((option) => <Option key={option} text={option}/>)}
-      </div>
-    )
-  }
+const Action = (props) => {
+  return (
+    <div>
+      <button
+        onClick={props.handlePick}
+        disabled={!props.hasOptions}
+      >What should I do?</button>
+    </div>
+  )
 }
 
-class Option extends React.Component {
-  render() {
-    return (
-      <div>
-      {this.props.text}
-      </div>
-    )
-  }
+const Options = (props) => {
+  
+  return (
+    <div>
+      <button onClick={props.handleDeleteOptions}>Remove All</button>
+      {props.options.map((option) => <Option key={option} text={option} handleDeleteOption={props.handleDeleteOption}/>)}
+    </div>
+  )
 }
 
-
+const Option = (props) => {
+  return (
+    <div>
+      {props.text}
+      <button onClick={(e) => {
+        props.handleDeleteOption(props.text);
+      }} >Remove</button>
+    </div>
+  )
+}
 
 class AddOption extends React.Component {
   constructor(props) {
@@ -122,9 +146,7 @@ class AddOption extends React.Component {
     const option = e.target.elements.option.value.trim();
     const error = this.props.handleAddOption(option);
 
-    this.setState(()=> {
-      return {error};
-    })
+    this.setState(()=> ({error}));
   }
   render() {
     return (
@@ -138,88 +160,6 @@ class AddOption extends React.Component {
     )
   }
 }
-
-class Counter extends React.Component {
-  constructor(props){
-    super(props);
-    this.state = {
-      count:0
-    }
-    this.handleAdd = this.handleAdd.bind(this);
-    this.handleMinus = this.handleMinus.bind(this);
-    this.handleClear = this.handleClear.bind(this);
-  }
-  handleMinus() {
-    
-    this.setState((prevState)=>{
-      return {count: prevState.count -1}
-    });
-  }
-  handleClear() {
-    this.setState(() => {
-      return {count: 0}
-    })
-  }
-  handleAdd(){
-    this.setState((prevState)=>{
-      return {count: prevState.count +1}
-    });
-  }
-  render() {
-    return (
-      <div>
-        <h2>COUNTER APP</h2>
-        <h3>{this.state.count}</h3>
-        <button onClick={this.handleAdd}>+1</button>
-        <button onClick={this.handleMinus}>-1</button>
-        <button onClick={this.handleClear}>Clear</button>
-      </div>
-    )
-  }
-}
-
-class VisibilityToggle extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      visible: false
-    }
-    this.handleToggle = this.handleToggle.bind(this);
-  }
-
-  handleToggle() {
-    this.setState((prevState) => {
-      return {
-        visible : !prevState.visible
-      }
-    })
-  }
-  render() {
-    return (
-      <div>
-        <h2>Visibility Toggle</h2>
-        <button onClick={this.handleToggle}>{this.state.visible ? "Hide info" : "Show info"}</button>
-        {this.state.visible && <p>Hey there I'm your information</p>}
-      </div>
-    )
-  }
-}
-
-class DataBtn extends React.Component {
-  constructor(props) {
-    super(props)
-    this.handleShowData = this.handleShowData.bind(this);
-  }
-
-  handleShowData() {
-    console.log(this.props.options)
-  }
-
-  render() {
-    return <button onClick={this.handleShowData}>Show Data</button>
-  }
-}
-
 
 var appRoot = document.getElementById("app");
 
